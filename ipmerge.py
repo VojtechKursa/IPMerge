@@ -1,36 +1,66 @@
-from abc import abstractmethod
 from pathlib import Path
-from sys import argv, stderr, stdout
+from sys import argv, stderr, stdin, stdout
 from os import mkdir
 from typing import TextIO
 
+from address import IP_Block
 
 
-class ProgramParameters:
+
+class _ProgramParameters:
 	_instance = None
 
 	def __init__(self, verbosityLevel: int = 0, outputFile: str | None = None, inputFiles : list[str] = list[str]()):
-		self.verbosityLevel = verbosityLevel
-		self.outputFile = outputFile
-		self.inputFiles = inputFiles
+		self._verbosityLevel = verbosityLevel
+		self._outputFile = outputFile
+		self._inputFiles = inputFiles
+	
+	@property
+	def verbosityLevel(self):
+		return self._verbosityLevel
+	
+	@property
+	def outputFile(self):
+		return self._outputFile
+	
+	@property
+	def inputFiles(self):
+		return self._inputFiles
 
 	@staticmethod
-	def getInstance() -> "ProgramParameters":
-		if ProgramParameters._instance is None:
-			ProgramParameters._instance = ProgramParameters()
+	def setInstance(instance: "_ProgramParameters") -> None:
+		_ProgramParameters._instance = instance
+
+	@staticmethod
+	def getInstance() -> "_ProgramParameters":
+		if _ProgramParameters._instance is None:
+			_ProgramParameters._instance = _ProgramParameters()
 		
-		return ProgramParameters._instance
+		return _ProgramParameters._instance
+	
+class _ProgramParametersBuilder:
+	def __init__(self):
+		parameters = _ProgramParameters()
+
+		self.verbosityLevel = parameters.verbosityLevel
+		self.outputFile = parameters.outputFile
+		self.inputFiles = parameters.inputFiles
+	
+	def create(self) -> _ProgramParameters:
+		return _ProgramParameters(self.verbosityLevel, self.outputFile, self.inputFiles)
 
 
 
 def _printUsage():
-	print("Usage: ipmerge [OPTIONS] INPUT_FILES...")
+	print(f"Usage: python {Path(__file__).name} [OPTIONS] INPUT_FILES...")
+	print("  INPUT_FILES - Files containing the CIDR blocks to be read and processed.")
+	print("                Use '-' to read from stdin.")
 
 def _printHelp():
 	_printUsage()
 	print()
 	print("Options:")
-	print("  -o, --output FILE    Output the result to the specified file instead of the terminal.")
+	print("  -o, --output FILE    Output the result to the specified FILE instead of the terminal.")
 	print("                         If multiple output files are specified, only the last one is accepted.")
 	print("  -v                   Print merging result summary to stderr.")
 	print("  -vv                  Like -v but also prints every merged block to stderr.")
@@ -46,8 +76,8 @@ def _printHelp():
 
 
 
-def _parseParameters(arguments: list[str]) -> ProgramParameters:
-	parameters = ProgramParameters.getInstance()
+def _parseParameters(arguments: list[str]) -> _ProgramParameters:
+	parameters = _ProgramParametersBuilder()
 
 	if len(arguments) < 2:
 		_printUsage()
@@ -77,179 +107,7 @@ def _parseParameters(arguments: list[str]) -> ProgramParameters:
 
 		i += 1
 
-	return parameters
-
-
-
-_masksForPrefixes = dict[int, list[int]]()
-
-
-
-def generateMasks(maxPrefix: int) -> list[int]:
-	masks = list[int]()
-
-	if maxPrefix >= 0:
-		masks.append(0)
-	
-	for i in range(1, maxPrefix + 1):
-		masks.append(masks[i - 1] | (1 << (maxPrefix - i)))
-
-	return masks
-
-def prefixToMask(maxPrefix: int, prefix: int) -> int:
-	if prefix < 0:
-		stderr.write(f"Invalid prefix {prefix}\n")
-		exit(1)
-	
-	masks = _masksForPrefixes.get(maxPrefix)
-
-	if masks == None:
-		masks = generateMasks(maxPrefix)
-		_masksForPrefixes[maxPrefix] = masks
-	
-	if prefix > len(masks):
-		stderr.write(f"Invalid prefix {prefix} for address with maximum prefix of {maxPrefix}\n")
-		exit(1)
-
-	return masks[prefix]
-
-
-
-class IP_Address:
-	def __init__(self, address: int):
-		self.address = address
-
-	@abstractmethod
-	def __str__(self) -> str:
-		pass
-	
-	@staticmethod
-	@abstractmethod
-	def parse(string: str) -> "IP_Address | None":
-		pass
-
-	@staticmethod
-	@abstractmethod
-	def getAddressLength() -> int:
-		pass
-
-	@staticmethod
-	@abstractmethod
-	def getAddressTypeText() -> str:
-		pass
-
-class IPv4_Address(IP_Address):
-	_inversionMask = None
-
-	def __init__(self, address: int):
-		super().__init__(address)
-
-	def __str__(self) -> str:
-		octets = list[str]()
-		mask = 0xff << 24
-
-		for i in range(4):
-			octets.append(str((self.address & mask) >> ((3 - i) * 8)))
-			mask >>= 8
-
-		return ".".join(octets)
-	
-	@staticmethod
-	def parse(string: str) -> "IPv4_Address | None":
-		octets = string.split(".")
-
-		if len(octets) != 4:
-			return None
-		
-		address = 0
-
-		for octet in octets:
-			octetInt = int(octet)
-
-			if(octetInt < 0 or octetInt > 255):
-				return None
-			else:
-				address = (address << 8) | octetInt
-		
-		return IPv4_Address(address)
-	
-	@staticmethod
-	def getAddressLength() -> int:
-		return 32
-	
-	@staticmethod
-	def getAddressTypeText() -> str:
-		return "IPv4"
-
-
-
-class IP_Block:
-	addressTypes = {IPv4_Address}
-
-	def __init__(self, address: IP_Address, prefix : int):
-		self.address = address
-		self.prefix = prefix
-		self.mask = prefixToMask(address.getAddressLength(), prefix)
-
-	def __str__(self) -> str:
-		return f"{self.address}/{self.prefix}"
-
-	@staticmethod
-	def parse(string: str) -> "IP_Block":
-		blockParts = string.split("/")
-		address = None
-
-		for addressType in IP_Block.addressTypes:
-			address = addressType.parse(blockParts[0])
-			if address != None:
-				break
-
-		if address == None:
-			stderr.write(f"Unrecognized address: {blockParts[0]}\n")
-			exit(1)
-		
-		prefix = None
-		if len(blockParts) < 2:
-			prefix = address.getAddressLength()
-		else:
-			prefix = int(blockParts[1])
-			if prefix < 0 or prefix > address.getAddressLength():
-				stderr.write(f"Invalid prefix {prefix} for address of type {address.getAddressTypeText()}\n")
-				exit(1)
-
-		return IP_Block(address, prefix)
-	
-	def getFirstAddress(self) -> int:
-		return self.address.address
-
-	def getLastAddress(self) -> int:
-		return self.address.address | ((1 << (self.address.getAddressLength() - self.prefix)) - 1)
-	
-	@staticmethod
-	def merge(block1: "IP_Block", block2: "IP_Block") -> "IP_Block | None":
-		if type(block1.address) != type(block1.address):
-			return None
-		elif block1.mask == block2.mask:
-			if block1.address == block2.address:
-				return IP_Block(block1.address, block1.prefix)
-			
-			lower = None
-
-			if block1.getLastAddress() == block2.getFirstAddress() - 1:
-				lower = block1
-			elif block2.getLastAddress() == block1.getFirstAddress() - 1:
-				lower = block2
-
-			if lower != None and (lower.address.address & ~(lower.mask << 1) == 0):
-				return IP_Block(lower.address, lower.prefix - 1)
-			else:
-				return None
-		elif block2.getFirstAddress() < block1.getFirstAddress() and block1.getLastAddress() < block2.getLastAddress():
-			return IP_Block(block2.address, block2.prefix)
-		elif block1.getFirstAddress() < block2.getFirstAddress() and block2.getLastAddress() < block1.getLastAddress():
-			return IP_Block(block1.address, block1.prefix)
-		
-		return None
+	return parameters.create()
 
 
 
@@ -259,28 +117,32 @@ def readInput(fileNames : list[str]) -> dict[type, list[IP_Block]]:
 	blocks = dict[type, list[IP_Block]]()
 
 	for fileName in fileNames:
-		with open(fileName, "rt") as inputFile:
-			for line in inputFile:
-				line = line.split("#")[0]
-				if len(line.strip()) == 0:
-					continue
+		inputFile: TextIO = stdin if fileName == "-" else open(fileName, "rt")
+		
+		for line in inputFile:
+			line = line.split("#")[0]
+			if len(line.strip()) == 0:
+				continue
 
-				block = IP_Block.parse(line)
+			block = IP_Block.parse(line)
 
-				blocksOfType = blocks.get(type(block.address))
-				if blocksOfType == None:
-					blocksOfType = list[IP_Block]()
-					blocks[type(block.address)] = blocksOfType
+			blocksOfType = blocks.get(type(block.address))
+			if blocksOfType == None:
+				blocksOfType = list[IP_Block]()
+				blocks[type(block.address)] = blocksOfType
 
-				blocksOfType.append(block)
+			blocksOfType.append(block)
+
+		if inputFile != stdin:
+			inputFile.close()
 	
 	return blocks
 
 def merge(blockLists: dict[type, list[IP_Block]]) -> None:
-	verbosityLevel = ProgramParameters.getInstance().verbosityLevel
+	verbosityLevel = _ProgramParameters.getInstance().verbosityLevel
 
 	for blocks in blockLists.values():
-		blocks.sort(key=lambda block: block.address.address)
+		blocks.sort(key=lambda block: block.address.addressInt)
 
 		index = 1
 
@@ -312,9 +174,11 @@ def printOutput(output: TextIO, blockLists: dict[type, list[IP_Block]]) -> None:
 
 
 
+
+
 def main():
-	_parseParameters(argv)
-	parameters = ProgramParameters.getInstance()
+	_ProgramParameters.setInstance(_parseParameters(argv))
+	parameters = _ProgramParameters.getInstance()
 
 	blocks = readInput(parameters.inputFiles)
 	
@@ -351,4 +215,8 @@ def main():
 
 
 if __name__ == '__main__':
-	main()
+	try:
+		main()
+	except Exception as e:
+		stderr.write(e.__str__())
+		stderr.write("\n")
