@@ -41,15 +41,24 @@ class Address:
 	def __init__(self, addressInt: int):
 		self.addressInt = addressInt
 
-	@abstractmethod
 	def __str__(self) -> str:
-		pass
+		return self.compressed
 	
 	@staticmethod
 	@abstractmethod
 	def parse(string: str) -> "Address | None":
 		pass
 
+	@property
+	@abstractmethod
+	def compressed(self) -> str:
+		pass
+
+	@property
+	@abstractmethod
+	def exploded(self) -> str:
+		pass
+	
 	@property
 	@abstractmethod
 	def addressLength(self) -> int:
@@ -65,8 +74,13 @@ class IP_Address(Address):
 		super().__init__(ip_address.__int__())
 		self._ip_address = ip_address
 
-	def __str__(self) -> str:
-		return self._ip_address.compressed.upper()
+	@property
+	def compressed(self) -> str:
+		return self._ip_address.compressed
+	
+	@property
+	def exploded(self) -> str:
+		return self._ip_address.exploded
 	
 	@property
 	def addressLength(self) -> int:
@@ -143,8 +157,16 @@ class IP_Block:
 	def lastAddress(self) -> int:
 		return self.address.addressInt | ((1 << (self.address.addressLength - self.prefix)) - 1)
 
+	@property
+	def compressed(self) -> str:
+		return f"{self.address.compressed}/{self.prefix}"
+	
+	@property
+	def exploded(self) -> str:
+		return f"{self.address.exploded}/{self.prefix}"
+
 	def __str__(self) -> str:
-		return f"{self.address}/{self.prefix}"
+		return self.compressed
 
 	@staticmethod
 	def parse(string: str) -> "IP_Block":

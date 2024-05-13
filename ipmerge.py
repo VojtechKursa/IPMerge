@@ -4,50 +4,7 @@ from os import mkdir
 from typing import TextIO
 
 from address import IP_Block
-
-
-
-class _ProgramParameters:
-	_instance = None
-
-	def __init__(self, verbosityLevel: int = 0, outputFile: str | None = None, inputFiles : list[str] = list[str]()):
-		self._verbosityLevel = verbosityLevel
-		self._outputFile = outputFile
-		self._inputFiles = inputFiles
-	
-	@property
-	def verbosityLevel(self):
-		return self._verbosityLevel
-	
-	@property
-	def outputFile(self):
-		return self._outputFile
-	
-	@property
-	def inputFiles(self):
-		return self._inputFiles
-
-	@staticmethod
-	def setInstance(instance: "_ProgramParameters") -> None:
-		_ProgramParameters._instance = instance
-
-	@staticmethod
-	def getInstance() -> "_ProgramParameters":
-		if _ProgramParameters._instance is None:
-			_ProgramParameters._instance = _ProgramParameters()
-		
-		return _ProgramParameters._instance
-	
-class _ProgramParametersBuilder:
-	def __init__(self):
-		parameters = _ProgramParameters()
-
-		self.verbosityLevel = parameters.verbosityLevel
-		self.outputFile = parameters.outputFile
-		self.inputFiles = parameters.inputFiles
-	
-	def create(self) -> _ProgramParameters:
-		return _ProgramParameters(self.verbosityLevel, self.outputFile, self.inputFiles)
+from parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder
 
 
 
@@ -60,11 +17,15 @@ def _printHelp():
 	_printUsage()
 	print()
 	print("Options:")
+	print("  -h, --help           Print help and exit.")
 	print("  -o, --output FILE    Output the result to the specified FILE instead of the terminal.")
 	print("                         If multiple output files are specified, only the last one is accepted.")
 	print("  -v                   Print merging result summary to stderr.")
 	print("  -vv                  Like -v but also prints every merged block to stderr.")
-	print("  -h, --help           Print help and exit.")
+	print("  -u, --upper          Print all letters (i.e. in IPv6 address) in uppercase (default).")
+	print("  -l, --lower          Print all letters (i.e. in IPv6 address) in lowercase.")
+	print("  -c, --compressed     Print compressed version of addresses (i.e. IPv6) (default).")
+	print("  -f, --full           Print full (uncompressed) version of addresses.")
 	print()
 	print("Input files:")
 	print("- The input files contain CIDR blocks (in format [NETWORK_ADDRESS]/[PREFIX_LENGTH]).")
@@ -76,8 +37,8 @@ def _printHelp():
 
 
 
-def _parseParameters(arguments: list[str]) -> _ProgramParameters:
-	parameters = _ProgramParametersBuilder()
+def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
+	parameters = IPMergeProgramParametersBuilder()
 
 	if len(arguments) < 2:
 		_printUsage()
@@ -85,27 +46,51 @@ def _parseParameters(arguments: list[str]) -> _ProgramParameters:
 
 	i = 1
 
+	outputFollows = False
+
 	while i < len(arguments):
 		argument = arguments[i]
 
-		if argument == "-o" or argument == "--output":
-			if i + 1 < len(arguments):
-				parameters.outputFile = arguments[i + 1]
-				i += 1
+		if outputFollows:
+			parameters.outputFile = argument
+			outputFollows = False
+		elif len(argument) >= 2 and argument[0] == "-":
+			if argument[1] == "-":
+				match argument:
+					case "--help":
+						_printHelp()
+						exit(0)
+					case "--output": outputFollows = True
+					case "--upper": parameters.uppercase = True
+					case "--lower": parameters.uppercase = False
+					case "--compressed": parameters.compressed = True
+					case "--full": parameters.compressed = False
+					case _:
+						stderr.write(f"Unknown option '{argument}'\n")
+						exit(1)
 			else:
-				stderr.write("Output option found, but output file doesn't follow.\n")
-				exit(1)
-		elif argument == "-v":
-			parameters.verbosityLevel = max(parameters.verbosityLevel, 1)
-		elif argument == "-vv":
-			parameters.verbosityLevel = max(parameters.verbosityLevel, 2)
-		elif argument == "-h" or argument == "--help":
-			_printHelp()
-			exit(0)
+				for charIndex in range(1, len(argument)):
+					match argument[charIndex]:
+						case "h":
+							_printHelp()
+							exit(0)
+						case "o": outputFollows = True
+						case "v": parameters.verbosityLevel = min(parameters.verbosityLevel + 1, IPMergeProgramParameters.MAX_VERBOSITY)
+						case "u": parameters.uppercase = True
+						case "l": parameters.uppercase = False
+						case "c": parameters.compressed = True
+						case "f": parameters.compressed = False
+						case _:
+							stderr.write(f"Unknown option '{argument[charIndex]}' in '{argument}'\n")
+							exit(1)
 		else:
 			parameters.inputFiles.append(argument)
-
+		
 		i += 1
+	
+	if outputFollows:
+		stderr.write("Output option found, but output file doesn't follow.\n")
+		exit(1)
 
 	return parameters.create()
 
@@ -139,7 +124,7 @@ def readInput(fileNames : list[str]) -> dict[type, list[IP_Block]]:
 	return blocks
 
 def merge(blockLists: dict[type, list[IP_Block]]) -> None:
-	verbosityLevel = _ProgramParameters.getInstance().verbosityLevel
+	verbosityLevel = IPMergeProgramParameters.getInstance().verbosityLevel
 
 	for blocks in blockLists.values():
 		blocks.sort(key=lambda block: block.address.addressInt)
@@ -164,9 +149,15 @@ def merge(blockLists: dict[type, list[IP_Block]]) -> None:
 					index = 1
 
 def printOutput(output: TextIO, blockLists: dict[type, list[IP_Block]]) -> None:
+	parameters = IPMergeProgramParameters.getInstance()
+	toWrite = ""
+
 	for i, blocks in enumerate(blockLists.values()):
 		for block in blocks:
-			output.write(block.__str__())
+			toWrite = block.compressed if parameters.compressed else block.exploded
+			toWrite = toWrite.upper() if parameters.uppercase else toWrite.lower()
+
+			output.write(toWrite)
 			output.write("\n")
 		
 		if i < len(blockLists) - 1:
@@ -177,8 +168,8 @@ def printOutput(output: TextIO, blockLists: dict[type, list[IP_Block]]) -> None:
 
 
 def main():
-	_ProgramParameters.setInstance(_parseParameters(argv))
-	parameters = _ProgramParameters.getInstance()
+	IPMergeProgramParameters.setInstance(_parseParameters(argv))
+	parameters = IPMergeProgramParameters.getInstance()
 
 	blocks = readInput(parameters.inputFiles)
 	
