@@ -1,4 +1,5 @@
-from address import DualOutputMode
+from address.ipv6 import DualOutputMode
+
 
 
 class IPMergeProgramParameters:

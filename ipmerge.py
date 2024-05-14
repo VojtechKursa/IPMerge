@@ -3,8 +3,8 @@ from sys import argv, stderr, stdin, stdout
 from os import mkdir
 from typing import TextIO
 
-from address import DualOutputMode, IP_Block
-from parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder
+from address.address_block import Address_Block
+from parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder, DualOutputMode
 
 
 
@@ -113,8 +113,8 @@ def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
 
 
 
-def readInput(fileNames : list[str]) -> dict[type, list[IP_Block]]:
-	blocks = dict[type, list[IP_Block]]()
+def readInput(fileNames : list[str]) -> dict[type, list[Address_Block]]:
+	blocks = dict[type, list[Address_Block]]()
 
 	for fileName in fileNames:
 		inputFile: TextIO = stdin if fileName == "-" else open(fileName, "rt")
@@ -124,11 +124,11 @@ def readInput(fileNames : list[str]) -> dict[type, list[IP_Block]]:
 			if len(line.strip()) == 0:
 				continue
 
-			block = IP_Block.parse(line)
+			block = Address_Block.parse(line)
 
 			blocksOfType = blocks.get(type(block.address))
 			if blocksOfType == None:
-				blocksOfType = list[IP_Block]()
+				blocksOfType = list[Address_Block]()
 				blocks[type(block.address)] = blocksOfType
 
 			blocksOfType.append(block)
@@ -138,7 +138,7 @@ def readInput(fileNames : list[str]) -> dict[type, list[IP_Block]]:
 	
 	return blocks
 
-def merge(blockLists: dict[type, list[IP_Block]]) -> None:
+def merge(blockLists: dict[type, list[Address_Block]]) -> None:
 	verbosityLevel = IPMergeProgramParameters.getInstance().verbosityLevel
 
 	for blocks in blockLists.values():
@@ -147,7 +147,7 @@ def merge(blockLists: dict[type, list[IP_Block]]) -> None:
 		index = 1
 
 		while index < len(blocks):
-			merged = IP_Block.merge(blocks[index - 1], blocks[index])
+			merged = Address_Block.merge(blocks[index - 1], blocks[index])
 
 			if merged == None:
 				index += 1
@@ -163,7 +163,7 @@ def merge(blockLists: dict[type, list[IP_Block]]) -> None:
 				if index == 0:
 					index = 1
 
-def printOutput(output: TextIO, blockLists: dict[type, list[IP_Block]]) -> None:
+def printOutput(output: TextIO, blockLists: dict[type, list[Address_Block]]) -> None:
 	parameters = IPMergeProgramParameters.getInstance()
 
 	for i, blocks in enumerate(blockLists.values()):
