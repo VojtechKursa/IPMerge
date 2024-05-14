@@ -3,7 +3,7 @@ from sys import argv, stderr, stdin, stdout
 from os import mkdir
 from typing import TextIO
 
-from address import IP_Block
+from address import DualOutputMode, IP_Block
 from parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder
 
 
@@ -24,16 +24,25 @@ def _printHelp():
 	print("  -vv                  Like -v but also prints every merged block to stderr.")
 	print("  -u, --upper          Print all letters (i.e. in IPv6 address) in uppercase (default).")
 	print("  -l, --lower          Print all letters (i.e. in IPv6 address) in lowercase.")
-	print("  -c, --compressed     Print compressed version of addresses (i.e. IPv6) (default).")
-	print("  -f, --full           Print full (uncompressed) version of addresses.")
+	print("  -c, --compressed     Print addresses that allow shortening (i.e. IPv6) in shortened (compressed) format (default).")
+	print("  -f, --full           Print all addresses in full (uncompressed) format.")
+	print("  -p, --preserve       Print only dual IPv6 addresses in dual format and normal IPv6 addresses")
+	print("                         in normal format (default). Note: When a dual IPv6 address is merged with")
+	print("                         a normal IPv6 address, it becomes a normal IPv6 address.")
+	print("  -d, --dual           Force printing of IPv6 addresses in dual format.")
+	print("  -n, --normal         Force printing of IPv6 addresses in normal format.")
 	print()
 	print("Input files:")
 	print("- The input files contain CIDR blocks (in format [NETWORK_ADDRESS]/[PREFIX_LENGTH]).")
 	print("- The '/[PREFIX_LENGTH]' is optional and if missing, it is assumed that the IP is a host IP,")
-	print("    therefore a block with the maximum allowable prefix length (32 for IPv4).")
+	print("    therefore a block with the maximum allowable prefix length (32 for IPv4, 128 for IPv6, ...).")
 	print("- Program exits with a failure if a network address invalid for the given prefix is encountered.")
 	print("- The '#' character serves as a line comment, anything on the line after it is ignored.")
 	print("- Empty lines are ignored.")
+	print()
+	print("Currently supported addresses:")
+	print("- IPv4")
+	print("- IPv6 - both normal and dual format")
 
 
 
@@ -65,6 +74,9 @@ def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
 					case "--lower": parameters.uppercase = False
 					case "--compressed": parameters.compressed = True
 					case "--full": parameters.compressed = False
+					case "--preserve": parameters.dualOutputMode = DualOutputMode.VALUE_DEPENDENT
+					case "--dual": parameters.dualOutputMode = DualOutputMode.FORCE_DUAL
+					case "--normal": parameters.dualOutputMode = DualOutputMode.FORCE_NORMAL
 					case _:
 						stderr.write(f"Unknown option '{argument}'\n")
 						exit(1)
@@ -80,6 +92,9 @@ def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
 						case "l": parameters.uppercase = False
 						case "c": parameters.compressed = True
 						case "f": parameters.compressed = False
+						case "p": parameters.dualOutputMode = DualOutputMode.VALUE_DEPENDENT
+						case "d": parameters.dualOutputMode = DualOutputMode.FORCE_DUAL
+						case "n": parameters.dualOutputMode = DualOutputMode.FORCE_NORMAL
 						case _:
 							stderr.write(f"Unknown option '{argument[charIndex]}' in '{argument}'\n")
 							exit(1)
@@ -150,14 +165,10 @@ def merge(blockLists: dict[type, list[IP_Block]]) -> None:
 
 def printOutput(output: TextIO, blockLists: dict[type, list[IP_Block]]) -> None:
 	parameters = IPMergeProgramParameters.getInstance()
-	toWrite = ""
 
 	for i, blocks in enumerate(blockLists.values()):
 		for block in blocks:
-			toWrite = block.compressed if parameters.compressed else block.exploded
-			toWrite = toWrite.upper() if parameters.uppercase else toWrite.lower()
-
-			output.write(toWrite)
+			output.write(block.toString(parameters.compressed, parameters.uppercase, parameters.dualOutputMode))
 			output.write("\n")
 		
 		if i < len(blockLists) - 1:
