@@ -69,7 +69,7 @@ class IPv6Segments(list[int], SupportsInt, SupportsBytes):
 	
 	@staticmethod
 	def __createValueError(value: int):
-		return ValueError(f"Value {value} is outside of allowed range for IPv6 segment values (0 - 0xffff)")
+		return ValueError(f"Value {value} ({hex(value)}) is outside of allowed range for IPv6 segment values (0 - 0xffff)")
 	
 	def append(self, item: int):
 		if item < 0 or item > 0xffff:
