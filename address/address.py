@@ -10,7 +10,7 @@ _masksForPrefixes = dict[int, list[int]]()
 
 
 
-def generateMasks(maxPrefix: int) -> list[int]:
+def _generateMasks(maxPrefix: int) -> list[int]:
 	masks = list[int]()
 
 	if maxPrefix >= 0:
@@ -28,7 +28,7 @@ def prefixToMask(maxPrefix: int, prefix: int) -> int:
 	masks = _masksForPrefixes.get(maxPrefix)
 
 	if masks == None:
-		masks = generateMasks(maxPrefix)
+		masks = _generateMasks(maxPrefix)
 		_masksForPrefixes[maxPrefix] = masks
 	
 	if prefix > len(masks):

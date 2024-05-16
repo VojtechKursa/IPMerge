@@ -96,16 +96,16 @@ class IPv6_Address(Address):
 	def __init__(self, address: int | IPv6Segments, dual: bool = False):
 		if type(address) == int:
 			super().__init__(address)
-			self.__segments = IPv6Segments(address)
+			self._segments = IPv6Segments(address)
 		elif type(address) == IPv6Segments:
 			super().__init__(int(address))
-			self.__segments = address
+			self._segments = address
 
-		self.__dual = dual
+		self._dual = dual
 	
 	@property
-	def dual(self):
-		return self.__dual
+	def dual(self) -> bool:
+		return self._dual
 	
 	@property
 	def ipv4_part(self):
@@ -116,7 +116,7 @@ class IPv6_Address(Address):
 		return IPv4_Address(self.ipv4_part)
 	
 	@property
-	def string(self):
+	def string(self):	# for debugging
 		return self.toString()
 	
 	@staticmethod
@@ -206,19 +206,19 @@ class IPv6_Address(Address):
 		return (maxZerosIndex, maxZeros)
 	
 	@staticmethod
-	def __toHex(numbers: Iterable[int]) -> Iterable[str]:
+	def _toHex(numbers: Iterable[int]) -> Iterable[str]:
 		return [hex(x).removeprefix("0x") for x in numbers]
 			
-	def __getCompressed(self, dual: bool) -> str:
+	def _getCompressed(self, dual: bool) -> str:
 		end = 8 if not dual else 6
-		segments = self.__segments[:end]
+		segments = self._segments[:end]
 
 		zeroPadIndex, zeroPadLength = IPv6_Address.findLongestZeroSegmentString(segments)
 		if zeroPadIndex == None or zeroPadLength < 2:
-			return ":".join(IPv6_Address.__toHex(segments))
+			return ":".join(IPv6_Address._toHex(segments))
 		
-		left = ":".join(IPv6_Address.__toHex(segments[:zeroPadIndex]))
-		right = ":".join(IPv6_Address.__toHex(segments[zeroPadIndex+zeroPadLength:]))
+		left = ":".join(IPv6_Address._toHex(segments[:zeroPadIndex]))
+		right = ":".join(IPv6_Address._toHex(segments[zeroPadIndex+zeroPadLength:]))
 
 		if len(left) > 0 and len(right) > 0:
 			return left + "::" + right
@@ -229,13 +229,13 @@ class IPv6_Address(Address):
 				return left + "::"
 			
 	
-	def __getFull(self, dual: bool) -> str:
+	def _getFull(self, dual: bool) -> str:
 		end = 8 if not dual else 6
-		return ":".join([hex(x).removeprefix("0x").rjust(4, "0") for x in self.__segments[: end + 1]])
+		return ":".join([hex(x).removeprefix("0x").rjust(4, "0") for x in self._segments[: end + 1]])
 
 	def toString(self, compressed: bool = True, uppercase: bool = True, dualOutputMode: DualOutputMode = DualOutputMode.VALUE_DEPENDENT) -> str:
-		outDual = self.__dual and dualOutputMode == DualOutputMode.VALUE_DEPENDENT or dualOutputMode == DualOutputMode.FORCE_DUAL
-		result = self.__getCompressed(outDual) if compressed else self.__getFull(outDual)
+		outDual = self.dual and dualOutputMode == DualOutputMode.VALUE_DEPENDENT or dualOutputMode == DualOutputMode.FORCE_DUAL
+		result = self._getCompressed(outDual) if compressed else self._getFull(outDual)
 		result = result.upper() if uppercase else result.lower()
 
 		if outDual:
@@ -247,7 +247,7 @@ class IPv6_Address(Address):
 		
 	def setDualAfterMerge(self, address1: Address, address2: Address) -> None:
 		if type(address1) == IPv6_Address and type(address2) == IPv6_Address:
-			self.__dual = address1.dual and address2.dual
+			self._dual = address1.dual and address2.dual
 	
 	@property
 	def addressLength(self) -> int:
