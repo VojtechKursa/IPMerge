@@ -1,7 +1,7 @@
-from address.address import Address, prefixToMask
-from address.ipv4 import IPv4_Address
-from address.ipv6 import IPv6_Address, DualOutputMode
-from address.exceptions import InvalidNetworkAddressException, InvalidPrefixException, UnrecognizedAddressException
+from .address import Address, prefixToMask
+from .ipv4 import IPv4_Address
+from .ipv6 import IPv6_Address, DualOutputMode
+from .exceptions import InvalidNetworkAddressException, InvalidPrefixException, UnrecognizedAddressException
 
 
 

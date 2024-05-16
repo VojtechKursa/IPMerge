@@ -2,7 +2,7 @@ from abc import abstractmethod
 from math import ceil
 from typing import SupportsBytes, SupportsInt
 
-from address.exceptions import InvalidPrefixException
+from .exceptions import InvalidPrefixException
 
 
 

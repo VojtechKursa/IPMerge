@@ -1,8 +1,8 @@
 from typing import Iterable, SupportsBytes, SupportsIndex, SupportsInt, overload
 from enum import Enum
 
-from address.address import Address
-from address.ipv4 import IPv4_Address
+from .address import Address
+from .ipv4 import IPv4_Address
 
 
 
