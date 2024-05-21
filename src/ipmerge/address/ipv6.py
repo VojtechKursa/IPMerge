@@ -155,7 +155,7 @@ class IPv6_Address(Address):
 					return None
 			
 			if "." in segment:
-				if i != len(segments) - 1:	# not on last segment
+				if i != len(segments) - 1:	# if not on last segment
 					return None
 				if len(segments) > 7:	# segment count check for a dual address
 					return None
@@ -181,6 +181,8 @@ class IPv6_Address(Address):
 		if type(fillAt) == int:
 			for _ in range(8 - len(segmentList)):
 				segmentList.insert(fillAt, 0)
+		elif fillAt == None and len(segmentList) != 8:
+			return None
 		
 		return IPv6_Address(segmentList, dual)
 
