@@ -120,8 +120,8 @@ def readInput(fileNames : list[str]) -> dict[type, list[Address_Block]]:
 		inputFile: TextIO = stdin if fileName == "-" else open(fileName, "rt")
 		
 		for line in inputFile:
-			line = line.split("#")[0]
-			if len(line.strip()) == 0:
+			line = line.split("#")[0].strip()
+			if len(line) == 0:
 				continue
 
 			block = Address_Block.parse(line)
