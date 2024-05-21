@@ -2,16 +2,27 @@
 name = "IPMerge"
 description = "Merge CIDR blocks of IPv4 and IPv6 addresses"
 authors = [
-    {name = "Vojtěch Kursa", email = "it.vojtechkursa@gmail.com"},
+    {name = "Vojtech Kursa", email = "it.vojtechkursa@gmail.com"},
 ]
 dependencies = []
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 classifiers = [
+    "Environment :: Console",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Intended Audience :: System Administrators",
+    "Topic :: Utilities",
+    "Topic :: System :: Networking",
+    "Topic :: Text Processing :: General",
+    "Natural Language :: English",
+    "Typing :: Typed"
 ]
 dynamic = ["version"]
 
