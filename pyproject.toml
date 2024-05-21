@@ -1,6 +1,5 @@
 [project]
 name = "IPMerge"
-version = "0.1.0"
 description = "Merge CIDR blocks of IPv4 and IPv6 addresses"
 authors = [
     {name = "Vojtěch Kursa", email = "it.vojtechkursa@gmail.com"},
@@ -14,7 +13,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
+dynamic = ["version"]
 
 [project.optional-dependencies]
 tests = [
@@ -34,3 +33,7 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.version]
+source = "file"
+path = "src/ipmerge/__version__.py"
