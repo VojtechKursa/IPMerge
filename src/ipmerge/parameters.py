@@ -1,4 +1,4 @@
-from address.ipv6 import DualOutputMode
+from .address.ipv6 import DualOutputMode
 
 
 

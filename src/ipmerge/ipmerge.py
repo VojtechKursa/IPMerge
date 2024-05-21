@@ -3,13 +3,13 @@ from sys import argv, stderr, stdin, stdout
 from os import mkdir
 from typing import TextIO
 
-from address.address_block import Address_Block
-from parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder, DualOutputMode
+from .address.address_block import Address_Block
+from .parameters import IPMergeProgramParameters, IPMergeProgramParametersBuilder, DualOutputMode
 
 
 
 def _printUsage():
-	print(f"Usage: python {Path(__file__).name} [OPTIONS] INPUT_FILES...")
+	print(f"Usage: ipmerge [OPTIONS] INPUT_FILES...")
 	print("  INPUT_FILES - Files containing the CIDR blocks to be read and processed.")
 	print("                Use '-' to read from stdin.")
 
@@ -178,7 +178,7 @@ def printOutput(output: TextIO, blockLists: dict[type, list[Address_Block]]) -> 
 
 
 
-def main():
+def main_inner():
 	IPMergeProgramParameters.setInstance(_parseParameters(argv))
 	parameters = IPMergeProgramParameters.getInstance()
 
@@ -212,13 +212,17 @@ def main():
 		stderr.write(f"Merged block count: {currentSize} ({round(currentSize / float(originalBlockCount) * 100, 2)} %).\n")
 		stderr.write(f"Decrease by: {originalBlockCount - currentSize} ({round((originalBlockCount - currentSize) / float(originalBlockCount) * 100, 2)} %).\n")
 
+def main():
+	try:
+		main_inner()
+	except Exception as e:
+		stderr.write(e.__str__())
+		stderr.write("\n")
+		exit(1)
+
 
 
 
 
 if __name__ == '__main__':
-	try:
-		main()
-	except Exception as e:
-		stderr.write(e.__str__())
-		stderr.write("\n")
+	main()

@@ -16,14 +16,21 @@ classifiers = [
 ]
 
 
-[tool.pdm]
-distribution = true
-
-[tool.pdm.dev-dependencies]
-test = [
+[project.optional-dependencies]
+tests = [
     "pytest>=8.2.0",
 ]
+
+[project.scripts]
+ipmerge = "ipmerge.__main__:main"
+
+
 
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+
+
+[tool.pdm]
+distribution = true
