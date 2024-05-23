@@ -31,6 +31,8 @@ def _printHelp():
 	print("                         a normal IPv6 address, it becomes a normal IPv6 address.")
 	print("  -d, --dual           Force printing of IPv6 addresses in dual format.")
 	print("  -n, --normal         Force printing of IPv6 addresses in normal format.")
+	print("  -b, --block          Always output result in the CIDR block format (with explicit prefix).")
+	print("                         By default, prefix is not outputted if the block is a single (host) address.")
 	print()
 	print("Input files:")
 	print("- The input files contain CIDR blocks (in format [NETWORK_ADDRESS]/[PREFIX_LENGTH]).")
@@ -77,6 +79,7 @@ def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
 					case "--preserve": parameters.dualOutputMode = DualOutputMode.VALUE_DEPENDENT
 					case "--dual": parameters.dualOutputMode = DualOutputMode.FORCE_DUAL
 					case "--normal": parameters.dualOutputMode = DualOutputMode.FORCE_NORMAL
+					case "--block": parameters.alwaysOutputPrefix = True
 					case _:
 						stderr.write(f"Unknown option '{argument}'\n")
 						exit(1)
@@ -95,6 +98,7 @@ def _parseParameters(arguments: list[str]) -> IPMergeProgramParameters:
 						case "p": parameters.dualOutputMode = DualOutputMode.VALUE_DEPENDENT
 						case "d": parameters.dualOutputMode = DualOutputMode.FORCE_DUAL
 						case "n": parameters.dualOutputMode = DualOutputMode.FORCE_NORMAL
+						case "b": parameters.alwaysOutputPrefix = True
 						case _:
 							stderr.write(f"Unknown option '{argument[charIndex]}' in '{argument}'\n")
 							exit(1)
@@ -168,7 +172,7 @@ def printOutput(output: TextIO, blockLists: dict[type, list[Address_Block]]) -> 
 
 	for i, blocks in enumerate(blockLists.values()):
 		for block in blocks:
-			output.write(block.toString(parameters.compressed, parameters.uppercase, parameters.dualOutputMode))
+			output.write(block.toString(parameters.compressed, parameters.uppercase, parameters.dualOutputMode, parameters.alwaysOutputPrefix))
 			output.write("\n")
 		
 		if i < len(blockLists) - 1:

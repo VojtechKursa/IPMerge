@@ -7,13 +7,22 @@ class IPMergeProgramParameters:
 	
 	MAX_VERBOSITY = 2
 
-	def __init__(self, verbosityLevel: int = 0, outputFile: str | None = None, inputFiles : list[str] = list[str](), uppercase: bool = True, compressed: bool = True, dualOutputMode: DualOutputMode = DualOutputMode.VALUE_DEPENDENT):
+	def __init__(
+			self,
+			verbosityLevel: int = 0,
+			outputFile: str | None = None,
+			inputFiles : list[str] = list[str](),
+			uppercase: bool = True, compressed: bool = True,
+			dualOutputMode: DualOutputMode = DualOutputMode.VALUE_DEPENDENT,
+			alwaysOutputPrefix: bool = False
+			):
 		self._verbosityLevel = verbosityLevel
 		self._outputFile = outputFile
 		self._inputFiles = inputFiles
 		self._uppercase = uppercase
 		self._compressed = compressed
 		self._dualOutputMode = dualOutputMode
+		self._alwaysOutputPrefix = alwaysOutputPrefix
 	
 	@property
 	def verbosityLevel(self):
@@ -38,6 +47,10 @@ class IPMergeProgramParameters:
 	@property
 	def dualOutputMode(self):
 		return self._dualOutputMode
+	
+	@property
+	def alwaysOutputPrefix(self):
+		return self._alwaysOutputPrefix
 
 	@staticmethod
 	def setInstance(instance: "IPMergeProgramParameters") -> None:
@@ -62,6 +75,15 @@ class IPMergeProgramParametersBuilder:
 		self.uppercase = parameters.uppercase
 		self.compressed = parameters.compressed
 		self.dualOutputMode = parameters.dualOutputMode
+		self.alwaysOutputPrefix = parameters.alwaysOutputPrefix
 	
 	def create(self) -> IPMergeProgramParameters:
-		return IPMergeProgramParameters(self.verbosityLevel, self.outputFile, self.inputFiles, self.uppercase, self.compressed, self.dualOutputMode)
+		return IPMergeProgramParameters(
+			self.verbosityLevel,
+			self.outputFile,
+			self.inputFiles,
+			self.uppercase,
+			self.compressed,
+			self.dualOutputMode,
+			self.alwaysOutputPrefix
+			)

@@ -58,14 +58,17 @@ class Address_Block:
 
 		return Address_Block(address, prefix)
 	
-	def toString(self, compressed: bool = True, uppercase: bool = True, dualOutputMode: DualOutputMode = DualOutputMode.VALUE_DEPENDENT) -> str:
+	def toString(self, compressed: bool = True, uppercase: bool = True, dualOutputMode: DualOutputMode = DualOutputMode.VALUE_DEPENDENT, alwaysOutputPrefix: bool = False) -> str:
 		addressString: str
 		if type(self.address) == IPv6_Address:
 			addressString = self.address.toString(compressed, uppercase, dualOutputMode)
 		else:
 			addressString = self.address.toString()
 		
-		return addressString + "/" + str(self.prefix)
+		if alwaysOutputPrefix or self.prefix != self.address.addressLength:
+			return addressString + "/" + str(self.prefix)
+		else:
+			return addressString
 	
 	@staticmethod
 	def merge(block1: "Address_Block", block2: "Address_Block") -> "Address_Block | None":
