@@ -13,15 +13,25 @@ _masksForPrefixes = dict[int, list[int]]()
 def _generateMasks(maxPrefix: int) -> list[int]:
 	masks = list[int]()
 
-	if maxPrefix >= 0:
-		masks.append(0)
+	if maxPrefix < 0:
+		raise InvalidPrefixException(maxPrefix, maxPrefix)
 	
-	for i in range(1, maxPrefix + 1):
-		masks.append(masks[i - 1] | (1 << (maxPrefix - i)))
+	masks.append(0)
 
+	if maxPrefix == 0:
+		return masks
+	
+	prefixBit = 1 << (maxPrefix - 1)
+
+	while prefixBit != 0:
+		masks.append(masks[len(masks) - 1] | prefixBit)
+		prefixBit >>= 1
+	
 	return masks
 
 def prefixToMask(maxPrefix: int, prefix: int) -> int:
+	if maxPrefix < 0:
+		raise InvalidPrefixException(prefix, maxPrefix)
 	if prefix < 0:
 		raise InvalidPrefixException(prefix)
 	
@@ -31,7 +41,7 @@ def prefixToMask(maxPrefix: int, prefix: int) -> int:
 		masks = _generateMasks(maxPrefix)
 		_masksForPrefixes[maxPrefix] = masks
 	
-	if prefix > len(masks):
+	if prefix >= len(masks):
 		raise InvalidPrefixException(prefix, maxPrefix)
 
 	return masks[prefix]
