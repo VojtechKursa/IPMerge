@@ -1,7 +1,5 @@
 {
 	"python.analysis.typeCheckingMode": "strict",
 	"python.analysis.autoImportCompletions": true,
-	"cSpell.words": [
-		"prefixlen"
-	]
+	"python.testing.pytestEnabled": true
 }

@@ -11,6 +11,14 @@ class DualOutputMode(Enum):
 	VALUE_DEPENDENT = 1
 	FORCE_DUAL = 2
 
+	@staticmethod
+	def toString(dualOutputMode: "DualOutputMode") -> str:
+		match dualOutputMode:
+			case DualOutputMode.FORCE_NORMAL: return "Force Normal"
+			case DualOutputMode.VALUE_DEPENDENT: return "Value Dependent"
+			case DualOutputMode.FORCE_DUAL: return "Force Dual"
+
+
 
 
 class IPv6Segments(list[int], SupportsInt, SupportsBytes):
