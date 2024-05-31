@@ -121,6 +121,9 @@ class IPv6_Address(Address):
 	
 	@staticmethod
 	def parse(string: str) -> "IPv6_Address | None":
+		if ":" not in string:
+			return None
+
 		string = string.strip().replace(" ", "")
 		
 		if string == "::":
@@ -128,7 +131,7 @@ class IPv6_Address(Address):
 		
 		segments = string.split(":")
 
-		if len(segments) > 8:
+		if len(segments) > 8:	# too many segments
 			return None
 		
 		segmentList = IPv6Segments()
@@ -155,7 +158,7 @@ class IPv6_Address(Address):
 					return None
 			
 			if "." in segment:
-				if i != len(segments) - 1:	# if not on last segment
+				if i != len(segments) - 1 or fillAt == len(segments):	# if not on last segment
 					return None
 				if len(segments) > 7:	# segment count check for a dual address
 					return None
