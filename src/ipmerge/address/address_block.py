@@ -72,7 +72,7 @@ class Address_Block:
 	
 	@staticmethod
 	def merge(block1: "Address_Block", block2: "Address_Block") -> "Address_Block | None":
-		if type(block1.address) != type(block1.address):
+		if type(block1.address) != type(block2.address):
 			return None
 		elif block1._mask == block2._mask:
 			if block1.address == block2.address:
