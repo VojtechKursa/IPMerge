@@ -16,6 +16,12 @@ class Address_Block:
 		if (self._address.addressInt & (~self._mask)) != 0:		# network address isn't valid network address for the given prefix
 			raise InvalidNetworkAddressException(self._address.__str__(), self._prefix)
 	
+	def __eq__(self, value: object) -> bool:
+		if type(value) == Address_Block:
+			return self.address == value.address and self.prefix == value.prefix
+		else:
+			return False
+	
 	@property
 	def address(self):
 		return self._address
